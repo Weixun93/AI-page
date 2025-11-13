@@ -12,7 +12,7 @@ def show():
     
     col1, col2, col3 = st.columns(3)
     with col2:
-        if st.button("🚀 開始您的科學化訓練", key="cta_hero", use_container_width=True):
+        if st.button("🚀 開始您的科學化訓練", key="cta_hero", width='stretch'):
             st.info("前往『數據整合』頁面開始吧！")
     
     st.divider()

@@ -8,7 +8,7 @@ def show():
     
     col1, col2, col3 = st.columns(3)
     with col2:
-        generate_report = st.button("🤖 產出建議報告", key="generate_report", use_container_width=True)
+        generate_report = st.button("🤖 產出建議報告", key="generate_report", width='stretch')
     
     if generate_report or st.session_state.get("show_report", False):
         st.session_state.show_report = True
@@ -72,7 +72,7 @@ def show():
                 height=400,
                 title_text="整體健康狀態"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
         
         with col2:
             st.write("**各項指標評分:**")

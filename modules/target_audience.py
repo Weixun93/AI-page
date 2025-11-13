@@ -31,7 +31,7 @@ def show():
         
         col1, col2, col3 = st.columns(3)
         with col2:
-            if st.button("🚀 立即註冊", key="register", use_container_width=True):
+            if st.button("🚀 立即註冊", key="register", width='stretch'):
                 st.success("感謝您的興趣！註冊頁面即將推出。")
     
     st.write("""

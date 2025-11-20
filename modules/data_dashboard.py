@@ -14,6 +14,76 @@ import matplotlib.pyplot as plt
 import io
 import base64
 import numpy as np
+import google.generativeai as genai
+
+# Gemini API Key - 請貼上您的API Key
+# GEMINI_API_KEY = "AIzaSyA0IbkD-x07Fi7wrtT1ZDMdL3WvieHVJuA"  # 替換為您的實際API Key
+GEMINI_API_KEY = "AIzaSyCn39H-Un3qYg5QRGWjxMjXqF1uNa1t7Dc"
+
+# 配置Gemini API
+genai.configure(api_key=GEMINI_API_KEY)
+
+
+def analyze_inbody_file(file_bytes, file_type):
+    """使用Gemini API分析InBody文件並提取關鍵數值"""
+    try:
+        model = genai.GenerativeModel('gemini-2.5-flash')
+        
+        prompt = """
+請仔細分析這份InBody身體成分分析報告，提取以下關鍵數值：
+
+- 身高 (height)：單位為cm
+- 體重 (weight)：單位為kg
+- 體脂肪率 (body_fat_percentage)：單位為%
+- 骨骼肌重量 (skeletal_muscle_mass)：單位為kg
+- BMI：身體質量指數
+
+請以JSON格式返回結果，格式如下：
+{
+"height": 數值或null,
+"weight": 數值或null,
+"body_fat_percentage": 數值或null,
+"skeletal_muscle_mass": 數值或null,
+"bmi": 數值或null
+}
+
+如果找不到某個數值，請設為null。
+只返回JSON，不要其他文字。
+"""
+        
+        # 設置mime type
+        if file_type in ['jpg', 'jpeg']:
+            mime_type = "image/jpeg"
+        elif file_type == 'png':
+            mime_type = "image/png"
+        elif file_type == 'pdf':
+            mime_type = "application/pdf"
+        else:
+            return None
+        
+        # 創建文件part
+        file_part = {
+            "mime_type": mime_type,
+            "data": base64.b64encode(file_bytes).decode()
+        }
+        
+        response = model.generate_content([prompt, file_part])
+        
+        # 清理響應文本
+        text = response.text.strip()
+        if text.startswith('```json'):
+            text = text[7:]
+        if text.endswith('```'):
+            text = text[:-3]
+        text = text.strip()
+        
+        # 解析JSON
+        data = json.loads(text)
+        return data
+        
+    except Exception as e:
+        st.error(f"分析InBody數據時出錯：{e}")
+        return None
 
 
 def load_mock_data(project_root):
@@ -168,28 +238,75 @@ def show(project_root):
         )
         
         if uploaded_file:
-            with st.spinner("正在分析 InBody 數據..."):
-                time.sleep(2)  # 模擬分析時間
+            with st.spinner("正在使用AI分析 InBody 數據..."):
+                # 讀取文件
+                file_bytes = uploaded_file.read()
+                file_type = uploaded_file.type.split('/')[-1].lower()
                 
-                # 模擬從圖片中提取數據 (實際應用中需要 OCR)
-                # 這裡使用隨機數據來模擬
-                mock_inbody_data = {
-                    'date': time.strftime('%Y-%m-%d'),
-                    'weightKg': np.random.uniform(65, 85),
-                    'skeletalMuscleMassKg': np.random.uniform(30, 40),
-                    'bodyFatPercentage': np.random.uniform(15, 25),
-                    'bmi': np.random.uniform(20, 28)
-                }
+                # 使用Gemini分析文件
+                inbody_data = analyze_inbody_file(file_bytes, file_type)
                 
-                st.session_state.inbody_data = mock_inbody_data
-                st.success("✅ InBody 數據分析完成！")
-                st.rerun()  # 重新載入頁面以顯示數據
+                if inbody_data:
+                    # 將數據存儲到session state
+                    extracted_data = {
+                        'date': time.strftime('%Y-%m-%d'),
+                        'heightCm': inbody_data.get('height'),
+                        'weightKg': inbody_data.get('weight'),
+                        'bodyFatPercentage': inbody_data.get('body_fat_percentage'),
+                        'skeletalMuscleMassKg': inbody_data.get('skeletal_muscle_mass'),
+                        'bmi': inbody_data.get('bmi')
+                    }
+                    
+                    st.session_state.inbody_data = extracted_data
+                    st.success("✅ InBody 數據分析完成！")
+                    st.rerun()  # 重新載入頁面以顯示數據
+                else:
+                    st.error("❌ 無法分析InBody數據，請檢查文件是否清晰可讀。")
     else:
         # 顯示 InBody 數據
         current_inbody = st.session_state.inbody_data
         
+        # 顯示提取的數值
+        st.subheader("📊 提取的身體成分數據")
+        
+        # 創建列來顯示數值
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        with col1:
+            if current_inbody.get('heightCm'):
+                st.metric(label="身高 (cm)", value=f"{current_inbody['heightCm']:.1f}")
+            else:
+                st.metric(label="身高 (cm)", value="未檢測")
+        
+        with col2:
+            if current_inbody.get('weightKg'):
+                st.metric(label="體重 (kg)", value=f"{current_inbody['weightKg']:.1f}")
+            else:
+                st.metric(label="體重 (kg)", value="未檢測")
+        
+        with col3:
+            if current_inbody.get('bodyFatPercentage'):
+                st.metric(label="體脂肪率 (%)", value=f"{current_inbody['bodyFatPercentage']:.1f}")
+            else:
+                st.metric(label="體脂肪率 (%)", value="未檢測")
+        
+        with col4:
+            if current_inbody.get('skeletalMuscleMassKg'):
+                st.metric(label="骨骼肌重量 (kg)", value=f"{current_inbody['skeletalMuscleMassKg']:.1f}")
+            else:
+                st.metric(label="骨骼肌重量 (kg)", value="未檢測")
+        
+        with col5:
+            if current_inbody.get('bmi'):
+                st.metric(label="BMI", value=f"{current_inbody['bmi']:.1f}")
+            else:
+                st.metric(label="BMI", value="未檢測")
+        
+        st.divider()
+        
+        # 舊的顯示邏輯（如果需要比較）
         # 計算差異 (與歷史數據比較)
-        if len(mock_data['inbody']['history']) > 0:
+        if len(mock_data['inbody']['history']) > 0 and current_inbody.get('weightKg') and current_inbody.get('skeletalMuscleMassKg') and current_inbody.get('bodyFatPercentage'):
             last_inbody = mock_data['inbody']['history'][-1]
             inbody_diff = {
                 'weightKg': current_inbody['weightKg'] - last_inbody['weightKg'],
@@ -202,31 +319,43 @@ def show(project_root):
         col1, col2, col3, col4 = st.columns(4)
         
         with col1:
-            st.metric(
-                label="體重 (kg)",
-                value=f"{current_inbody['weightKg']:.1f}",
-                delta=f"{inbody_diff['weightKg']:.1f}"
-            )
+            if current_inbody.get('weightKg'):
+                st.metric(
+                    label="體重 (kg)",
+                    value=f"{current_inbody['weightKg']:.1f}",
+                    delta=f"{inbody_diff['weightKg']:.1f}"
+                )
+            else:
+                st.metric(label="體重 (kg)", value="未檢測")
         
         with col2:
-            st.metric(
-                label="骨骼肌 (kg)",
-                value=f"{current_inbody['skeletalMuscleMassKg']:.1f}",
-                delta=f"{inbody_diff['skeletalMuscleMassKg']:.1f}"
-            )
+            if current_inbody.get('skeletalMuscleMassKg'):
+                st.metric(
+                    label="骨骼肌 (kg)",
+                    value=f"{current_inbody['skeletalMuscleMassKg']:.1f}",
+                    delta=f"{inbody_diff['skeletalMuscleMassKg']:.1f}"
+                )
+            else:
+                st.metric(label="骨骼肌 (kg)", value="未檢測")
         
         with col3:
-            st.metric(
-                label="體脂率 (%)",
-                value=f"{current_inbody['bodyFatPercentage']:.1f}",
-                delta=f"{inbody_diff['bodyFatPercentage']:.1f}"
-            )
+            if current_inbody.get('bodyFatPercentage'):
+                st.metric(
+                    label="體脂率 (%)",
+                    value=f"{current_inbody['bodyFatPercentage']:.1f}",
+                    delta=f"{inbody_diff['bodyFatPercentage']:.1f}"
+                )
+            else:
+                st.metric(label="體脂率 (%)", value="未檢測")
         
         with col4:
-            st.metric(
-                label="BMI",
-                value=f"{current_inbody['bmi']:.1f}"
-            )
+            if current_inbody.get('bmi'):
+                st.metric(
+                    label="BMI",
+                    value=f"{current_inbody['bmi']:.1f}"
+                )
+            else:
+                st.metric(label="BMI", value="未檢測")
         
         # 重新上傳按鈕
         if st.button("🔄 重新上傳 InBody 數據"):

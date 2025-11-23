@@ -1,0 +1,10 @@
+streamlit
+pandas
+plotly
+reportlab
+matplotlib
+numpy
+opencv-python
+mediapipe
+google-generativeai
+Pillow

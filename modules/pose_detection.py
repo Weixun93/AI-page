@@ -61,6 +61,13 @@ def record_from_webcam(output_video_path):
     pose_style = mp.solutions.drawing_styles.get_default_pose_landmarks_style()
     connections = mp_pose.POSE_CONNECTIONS
 
+    # 刪除舊的影片檔案（如果存在）
+    if os.path.exists(output_video_path):
+        try:
+            os.remove(output_video_path)
+        except:
+            pass
+
     # 打開本地攝像頭
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -498,6 +505,14 @@ def show():
     # 初始化 session state
     if 'stop_recording' not in st.session_state:
         st.session_state.stop_recording = False
+    if 'analysis_data' not in st.session_state:
+        st.session_state.analysis_data = None
+    if 'recording_complete' not in st.session_state:
+        st.session_state.recording_complete = False
+    if 'analyzing' not in st.session_state:
+        st.session_state.analyzing = False
+    if 'video_saved' not in st.session_state:
+        st.session_state.video_saved = False
     
     # ==================== 錄製和上傳選項 ====================
     tab_camera, tab_upload, tab_info, tab_tips = st.tabs(
@@ -508,38 +523,71 @@ def show():
         st.write("### 📱 即時攝像頭錄製和分析")
         st.warning("⚠️ 注意：請確保攝像頭已授權，光線充足，穿著貼身衣物")
 
+        # 狀態顯示區域
+        status_container = st.empty()
+        
+        # 錄製控制按鈕
         col1, col2 = st.columns(2)
-
         with col1:
-            if st.button("▶️ 開始錄製", key="start_recording", type="primary", width='stretch'):
-                st.session_state.stop_recording = False
-                
-                # 定義輸出路徑
-                output_video = "webcam_recording.mp4"
-                
-                # 開始錄製
-                success, duration = record_from_webcam(output_video)
-                
-                if success and os.path.exists(output_video):
-                    st.success(f"✅ 錄製完成！時長：{duration:.1f} 秒")
-                    
-                    # 顯示分析選項
-                    st.info("現在開始分析錄制的影片...")
-                    data_rows, fps, width, height = analyze_video_pose(output_video)
-                    
-                    if len(data_rows) > 0:
-                        st.success("✅ 分析完成！")
-                        st.divider()
-                        display_analysis_results(data_rows)
-                    else:
-                        st.error("❌ 未偵測到任何姿勢數據")
-                else:
-                    st.error("❌ 錄製失敗")
-
+            start_btn = st.button("▶️ 開始錄製", key="start_recording", type="primary", width='stretch')
         with col2:
-            if st.button("⏹️ 停止錄製", key="stop_recording_btn", width='stretch'):
-                st.session_state.stop_recording = True
-                st.info("⏸️ 正在停止錄製...")
+            stop_btn = st.button("⏹️ 停止錄製", key="stop_recording_btn", width='stretch')
+
+        # 如果點擊開始錄製
+        if start_btn:
+            st.session_state.stop_recording = False
+            st.session_state.recording_complete = False
+            st.session_state.analysis_data = None
+            st.session_state.analyzing = False
+            st.session_state.video_saved = False
+            
+            output_video = "webcam_recording.mp4"
+            success, duration = record_from_webcam(output_video)
+            
+            if success:
+                st.session_state.video_saved = True
+                st.session_state.recording_complete = True
+                status_container.success(f"✅ 錄製完成！時長：{duration:.1f} 秒")
+
+        # 如果點擊停止錄製
+        if stop_btn:
+            st.session_state.stop_recording = True
+            status_container.info("🔄 正在停止錄製並開始分析...")
+            st.rerun()
+
+        # 如果錄製已完成且影片已保存，開始分析
+        if st.session_state.recording_complete and st.session_state.video_saved and not st.session_state.analysis_data:
+            if not st.session_state.analyzing:
+                st.session_state.analyzing = True
+                status_container.info("🔄 正在分析錄制的影片，請稍候...")
+                
+                output_video = "webcam_recording.mp4"
+                data_rows, fps, width, height = analyze_video_pose(output_video)
+                
+                if len(data_rows) > 0:
+                    st.session_state.analysis_data = data_rows
+                    st.session_state.analyzing = False
+                    status_container.success("✅ 分析完成！")
+                else:
+                    st.session_state.analyzing = False
+                    status_container.error("❌ 未偵測到任何姿勢數據")
+
+        # 如果分析完成並有數據，顯示結果
+        if st.session_state.analysis_data:
+            st.divider()
+            st.header("📊 姿勢分析結果")
+            st.info("👇 **分析結果已顯示在下方** 👇")
+            display_analysis_results(st.session_state.analysis_data)
+            
+            # 添加重新開始按鈕
+            if st.button("🔄 重新錄製", key="restart_recording", width='stretch'):
+                st.session_state.stop_recording = False
+                st.session_state.recording_complete = False
+                st.session_state.analysis_data = None
+                st.session_state.analyzing = False
+                st.session_state.video_saved = False
+                status_container.empty()
+                st.rerun()
 
     with tab_upload:
         st.write("### 📤 上傳影片進行分析")

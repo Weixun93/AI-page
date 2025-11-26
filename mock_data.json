@@ -10,50 +10,159 @@
       "bodyFatPercentage": -1.1
     },
     "history": [
-      {"date": "2025-08-01", "weightKg": 78.0, "skeletalMuscleMassKg": 34.5, "bodyFatPercentage": 20.5, "bmi": 25.1},
-      {"date": "2025-09-01", "weightKg": 77.0, "skeletalMuscleMassKg": 34.8, "bodyFatPercentage": 19.5, "bmi": 24.8},
-      {"date": "2025-10-01", "weightKg": 77.0, "skeletalMuscleMassKg": 34.6, "bodyFatPercentage": 19.3, "bmi": 24.8},
-      {"date": "2025-11-01", "weightKg": 75.5, "skeletalMuscleMassKg": 35.1, "bodyFatPercentage": 18.2, "bmi": 24.1}
+      {
+        "date": "2025-08-01",
+        "weightKg": 78.0,
+        "skeletalMuscleMassKg": 34.5,
+        "bodyFatPercentage": 20.5,
+        "bmi": 25.1
+      },
+      {
+        "date": "2025-09-01",
+        "weightKg": 77.0,
+        "skeletalMuscleMassKg": 34.8,
+        "bodyFatPercentage": 19.5,
+        "bmi": 24.8
+      },
+      {
+        "date": "2025-10-01",
+        "weightKg": 77.0,
+        "skeletalMuscleMassKg": 34.6,
+        "bodyFatPercentage": 19.3,
+        "bmi": 24.8
+      },
+      {
+        "date": "2025-11-01",
+        "weightKg": 75.5,
+        "skeletalMuscleMassKg": 35.1,
+        "bodyFatPercentage": 18.2,
+        "bmi": 24.1
+      },
+      {
+        "date": "2025-11-26",
+        "heightCm": 156.9,
+        "weightKg": 59.1,
+        "bodyFatPercentage": 37.5,
+        "skeletalMuscleMassKg": 19.3,
+        "bmi": 24.0
+      }
     ]
   },
   "sleep": {
     "lastNight": {
-      "date": "2025-11-09",
+      "date": "2025-11-26",
       "totalHours": 7.5,
       "deepHours": 1.5,
       "remHours": 1.8,
       "lightHours": 4.2,
-      "sleepScore": 88
+      "sleepScore": 82
     },
     "weeklyHistory": [
-      {"date": "2025-11-03", "totalHours": 6.8, "sleepScore": 75},
-      {"date": "2025-11-04", "totalHours": 7.1, "sleepScore": 80},
-      {"date": "2025-11-05", "totalHours": 6.5, "sleepScore": 72},
-      {"date": "2025-11-06", "totalHours": 8.0, "sleepScore": 90},
-      {"date": "2025-11-07", "totalHours": 7.3, "sleepScore": 85},
-      {"date": "2025-11-08", "totalHours": 7.0, "sleepScore": 82},
-      {"date": "2025-11-09", "totalHours": 7.5, "sleepScore": 88}
+      {
+        "date": "2025-11-03",
+        "totalHours": 6.8,
+        "sleepScore": 75
+      },
+      {
+        "date": "2025-11-04",
+        "totalHours": 7.1,
+        "sleepScore": 80
+      },
+      {
+        "date": "2025-11-05",
+        "totalHours": 6.5,
+        "sleepScore": 72
+      },
+      {
+        "date": "2025-11-06",
+        "totalHours": 8.0,
+        "sleepScore": 90
+      },
+      {
+        "date": "2025-11-07",
+        "totalHours": 7.3,
+        "sleepScore": 85
+      },
+      {
+        "date": "2025-11-08",
+        "totalHours": 7.0,
+        "sleepScore": 82
+      },
+      {
+        "date": "2025-11-09",
+        "totalHours": 7.5,
+        "sleepScore": 88
+      }
     ]
   },
   "vitals": {
     "lastWorkoutAvgHR": 142,
     "weeklyHistory": [
-      {"date": "2025-11-03", "restingHeartRateBpm": 60, "heartRateVariabilityMs": 55},
-      {"date": "2025-11-04", "restingHeartRateBpm": 59, "heartRateVariabilityMs": 58},
-      {"date": "2025-11-05", "restingHeartRateBpm": 61, "heartRateVariabilityMs": 52},
-      {"date": "2025-11-06", "restingHeartRateBpm": 58, "heartRateVariabilityMs": 62},
-      {"date": "2025-11-07", "restingHeartRateBpm": 57, "heartRateVariabilityMs": 64},
-      {"date": "2025-11-08", "restingHeartRateBpm": 59, "heartRateVariabilityMs": 60},
-      {"date": "2025-11-09", "restingHeartRateBpm": 58, "heartRateVariabilityMs": 65}
+      {
+        "date": "2025-11-03",
+        "restingHeartRateBpm": 60,
+        "heartRateVariabilityMs": 55
+      },
+      {
+        "date": "2025-11-04",
+        "restingHeartRateBpm": 59,
+        "heartRateVariabilityMs": 58
+      },
+      {
+        "date": "2025-11-05",
+        "restingHeartRateBpm": 61,
+        "heartRateVariabilityMs": 52
+      },
+      {
+        "date": "2025-11-06",
+        "restingHeartRateBpm": 58,
+        "heartRateVariabilityMs": 62
+      },
+      {
+        "date": "2025-11-07",
+        "restingHeartRateBpm": 57,
+        "heartRateVariabilityMs": 64
+      },
+      {
+        "date": "2025-11-08",
+        "restingHeartRateBpm": 59,
+        "heartRateVariabilityMs": 60
+      },
+      {
+        "date": "2025-11-26",
+        "restingHeartRateBpm": 64,
+        "heartRateVariabilityMs": 72
+      }
     ]
   },
   "activity": {
-    "todayCaloriesBurnt": 450,
-    "todayCaloriesGoal": 600,
-    "weeklyTotalDistanceKm": 15.0,
+    "todayCaloriesBurnt": 850,
+    "todayCaloriesGoal": 800,
+    "weeklyTotalDistanceKm": 15.8,
     "recentActivities": [
-      { "id": "act_101", "type": "跑步", "date": "2025-11-09", "durationMinutes": 30, "distanceKm": 5.0, "caloriesBurnt": 350 },
-      { "id": "act_102", "type": "重量訓練", "date": "2025-11-08", "durationMinutes": 60, "caloriesBurnt": 400 }
+      {
+        "type": "游泳",
+        "date": "2025-11-27",
+        "durationMinutes": 40,
+        "caloriesBurnt": 250,
+        "distanceKm": 0.8,
+        "notes": null
+      },
+      {
+        "id": "act_101",
+        "type": "跑步",
+        "date": "2025-11-09",
+        "durationMinutes": 30,
+        "distanceKm": 5.0,
+        "caloriesBurnt": 350
+      },
+      {
+        "id": "act_102",
+        "type": "重量訓練",
+        "date": "2025-11-08",
+        "durationMinutes": 60,
+        "caloriesBurnt": 400
+      }
     ]
   }
 }

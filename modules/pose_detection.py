@@ -12,11 +12,16 @@ import time
 import subprocess
 import platform
 import logging
+import google.generativeai as genai
 
 # 抑制 TensorFlow 和 MediaPipe 的日誌
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
 logging.getLogger('mediapipe').setLevel(logging.ERROR)
+
+# Gemini API 配置
+GEMINI_API_KEY = "AIzaSyCn39H-Un3qYg5QRGWjxMjXqF1uNa1t7Dc"
+genai.configure(api_key=GEMINI_API_KEY)
 
 
 def calculate_angle(a, b, c):
@@ -65,8 +70,8 @@ def record_from_webcam(output_video_path):
     if os.path.exists(output_video_path):
         try:
             os.remove(output_video_path)
-        except:
-            pass
+        except Exception as e:
+            st.warning(f"無法刪除舊影片文件: {e}")
 
     # 打開本地攝像頭
     cap = cv2.VideoCapture(0)
@@ -77,7 +82,7 @@ def record_from_webcam(output_video_path):
     # 設置攝像頭分辨率
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-    
+
     input_fps = cap.get(cv2.CAP_PROP_FPS)
     if input_fps <= 0 or np.isnan(input_fps):
         input_fps = 30.0
@@ -85,9 +90,25 @@ def record_from_webcam(output_video_path):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    # 設定影片輸出
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_video_path, fourcc, input_fps, (width, height))
+    # 嘗試不同的編碼方式
+    fourcc_options = ['mp4v', 'XVID', 'MJPG', 'H264']
+    out = None
+
+    for fourcc_code in fourcc_options:
+        try:
+            fourcc = cv2.VideoWriter_fourcc(*fourcc_code)
+            out = cv2.VideoWriter(output_video_path, fourcc, input_fps, (width, height))
+            if out.isOpened():
+                st.info(f"✅ 使用 {fourcc_code} 編碼成功")
+                break
+        except Exception as e:
+            st.warning(f"編碼 {fourcc_code} 失敗: {e}")
+            continue
+
+    if out is None or not out.isOpened():
+        st.error("❌ 無法初始化影片寫入器，請檢查系統是否安裝了適當的編碼器")
+        cap.release()
+        return False, 0
 
     st.info("📹 攝像頭已啟動！")
     frame_placeholder = st.empty()
@@ -108,11 +129,12 @@ def record_from_webcam(output_video_path):
             while cap.isOpened():
                 ret, frame = cap.read()
                 if not ret:
+                    st.warning("無法讀取攝像頭幀")
                     break
 
                 # 鏡像翻轉便於自拍
                 frame = cv2.flip(frame, 1)
-                
+
                 rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = pose.process(rgb)
 
@@ -130,7 +152,11 @@ def record_from_webcam(output_video_path):
                 )
 
                 # 寫入輸出影片
-                out.write(frame)
+                if out.isOpened():
+                    out.write(frame)
+                else:
+                    st.error("影片寫入器已關閉")
+                    break
 
                 # 轉換為 RGB 以在 Streamlit 中顯示
                 frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -146,13 +172,35 @@ def record_from_webcam(output_video_path):
 
                 frame_count += 1
 
+                # 限制錄製時間（最多60秒）
+                if elapsed_time > 60:
+                    st.warning("錄製時間過長，已自動停止")
+                    break
+
+    except Exception as e:
+        st.error(f"錄製過程中發生錯誤: {e}")
+        return False, 0
+
     finally:
         cap.release()
-        out.release()
+        if out is not None:
+            out.release()
         cv2.destroyAllWindows()
 
     elapsed_time = time.time() - start_time
-    return True, elapsed_time
+
+    # 檢查影片是否成功保存
+    if os.path.exists(output_video_path):
+        file_size = os.path.getsize(output_video_path)
+        if file_size > 1000:  # 至少1KB
+            st.success(f"✅ 影片保存成功！大小: {file_size} bytes, 幀數: {frame_count}")
+            return True, elapsed_time
+        else:
+            st.error(f"❌ 影片文件過小 ({file_size} bytes)，可能保存失敗")
+            return False, 0
+    else:
+        st.error("❌ 影片文件未創建")
+        return False, 0
 
 
 def analyze_video_pose(video_path):
@@ -164,9 +212,25 @@ def analyze_video_pose(video_path):
     elbow_R_buffer = deque(maxlen=smooth_buffer_size)
     wrist_R_buffer = deque(maxlen=smooth_buffer_size)
 
+    # 檢查影片文件是否存在
+    if not os.path.exists(video_path):
+        raise ValueError(f"影片文件不存在: {video_path}")
+
+    # 檢查文件大小
+    file_size = os.path.getsize(video_path)
+    if file_size < 1000:  # 小於1KB
+        raise ValueError(f"影片文件過小 ({file_size} bytes)，可能保存失敗")
+
+    st.info(f"正在分析影片: {video_path} (大小: {file_size} bytes)")
+
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
-        raise ValueError("無法開啟影片")
+        # 嘗試使用不同的後端
+        cap = cv2.VideoCapture(video_path, cv2.CAP_FFMPEG)
+        if not cap.isOpened():
+            cap = cv2.VideoCapture(video_path, cv2.CAP_ANY)
+            if not cap.isOpened():
+                raise ValueError(f"無法開啟影片: {video_path}。請檢查影片格式和編碼。")
 
     # 取得影片資訊
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -176,6 +240,8 @@ def analyze_video_pose(video_path):
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
+    st.info(f"影片資訊: {width}x{height}, {total_frames}幀, {input_fps:.1f} FPS")
 
     data_rows = []
     frame_idx = 0
@@ -282,6 +348,7 @@ def analyze_video_pose(video_path):
         progress_bar.empty()
         status_text.empty()
 
+    st.success(f"分析完成！共處理 {len(data_rows)} 幀數據")
     return data_rows, input_fps, width, height
 
 
@@ -425,6 +492,57 @@ def display_analysis_results(data_rows):
         st.metric("左右對稱性", f"{max(0, min(100, symmetry_score)):.1f}%")
         st.metric("姿勢穩定性", f"{max(0, min(100, stability_score)):.1f}%")
 
+    # AI 智能建議
+    st.subheader("🤖 AI 智能建議")
+
+    with st.spinner("正在生成個人化建議..."):
+        ai_recommendations = analyze_pose_with_gemini(data_rows)
+
+    if ai_recommendations:
+        # 將建議分段顯示
+        sections = ai_recommendations.split('\n\n')
+
+        for section in sections:
+            if section.strip():
+                lines = section.strip().split('\n')
+                content_lines = []
+
+                # 檢查第一行是否包含標題
+                first_line = lines[0].strip() if lines else ""
+                is_title_line = False
+
+                if '整體姿勢評估' in first_line or (first_line.startswith('1.') and '評估' in first_line):
+                    with st.container(border=True):
+                        st.write("**📋 整體姿勢評估**")
+                        content_lines = lines[1:] if len(lines) > 1 else []
+                        is_title_line = True
+                elif '具體的改進建議' in first_line or (first_line.startswith('2.') and '改進建議' in first_line):
+                    with st.container(border=True):
+                        st.write("**💡 具體改進建議**")
+                        content_lines = lines[1:] if len(lines) > 1 else []
+                        is_title_line = True
+                elif '運動建議' in first_line or (first_line.startswith('3.') and '運動建議' in first_line):
+                    with st.container(border=True):
+                        st.write("**🏋️ 運動建議**")
+                        content_lines = lines[1:] if len(lines) > 1 else []
+                        is_title_line = True
+                elif '預防傷害提示' in first_line or (first_line.startswith('4.') and '預防傷害' in first_line):
+                    with st.container(border=True):
+                        st.write("**⚠️ 預防傷害提示**")
+                        content_lines = lines[1:] if len(lines) > 1 else []
+                        is_title_line = True
+
+                # 如果沒有識別到標題行，整段顯示
+                if not is_title_line:
+                    st.write(section.strip())
+                else:
+                    # 顯示內容部分
+                    content = '\n'.join(content_lines).strip()
+                    if content:
+                        st.write(content)
+    else:
+        st.warning("無法生成 AI 建議，請檢查網路連接")
+
     # 提供數據下載
     st.subheader("💾 下載分析數據")
 
@@ -463,6 +581,65 @@ def display_analysis_results(data_rows):
     # 顯示數據預覽
     st.subheader("📋 數據預覽")
     st.dataframe(df.head(20), width='stretch')
+
+
+def analyze_pose_with_gemini(data_rows):
+    """
+    使用 Gemini API 分析姿勢數據並生成 AI 建議
+    """
+    try:
+        # 準備數據摘要
+        if len(data_rows) == 0:
+            return "沒有足夠的數據進行分析"
+
+        # 計算關鍵統計數據
+        right_knee_angles = [row["right_knee_angle"] for row in data_rows if not np.isnan(row["right_knee_angle"])]
+        left_knee_angles = [row["left_knee_angle"] for row in data_rows if not np.isnan(row["left_knee_angle"])]
+        trunk_lean_angles = [row["trunk_lean_deg"] for row in data_rows if not np.isnan(row["trunk_lean_deg"])]
+
+        # 基本統計
+        stats_summary = {
+            "total_frames": len(data_rows),
+            "duration": data_rows[-1]["time"] if data_rows else 0,
+            "right_knee_avg": np.mean(right_knee_angles) if right_knee_angles else None,
+            "left_knee_avg": np.mean(left_knee_angles) if left_knee_angles else None,
+            "trunk_lean_avg": np.mean(trunk_lean_angles) if trunk_lean_angles else None,
+            "right_knee_min": np.min(right_knee_angles) if right_knee_angles else None,
+            "right_knee_max": np.max(right_knee_angles) if right_knee_angles else None,
+            "symmetry_score": 100 - abs(np.mean(right_knee_angles) - np.mean(left_knee_angles)) if right_knee_angles and left_knee_angles else None,
+            "stability_score": 100 - np.std(trunk_lean_angles) if trunk_lean_angles else None
+        }
+
+        # 創建分析提示
+        prompt = f"""
+請根據以下姿勢分析數據，為用戶提供專業的運動建議和姿勢改進指導：
+
+數據統計：
+- 總幀數: {stats_summary['total_frames']}
+- 分析時長: {stats_summary['duration']:.1f} 秒
+- 右膝平均角度: {stats_summary['right_knee_avg']:.1f}° (範圍: {stats_summary['right_knee_min']:.1f}° - {stats_summary['right_knee_max']:.1f}°)
+- 左膝平均角度: {stats_summary['left_knee_avg']:.1f}°
+- 軀幹平均傾斜: {stats_summary['trunk_lean_avg']:.1f}°
+- 左右對稱性分數: {stats_summary['symmetry_score']:.1f}/100
+- 姿勢穩定性分數: {stats_summary['stability_score']:.1f}/100
+
+請提供以下內容：
+1. 整體姿勢評估 (簡潔總結)
+2. 具體的改進建議 (針對膝蓋角度、軀幹姿勢等)
+3. 運動建議 (適合的訓練動作)
+4. 預防傷害提示
+
+請用繁體中文回答，保持專業且鼓勵性的語氣。
+"""
+
+        # 使用 Gemini API 生成建議
+        model = genai.GenerativeModel('gemini-2.0-flash')
+        response = model.generate_content(prompt)
+
+        return response.text.strip()
+
+    except Exception as e:
+        return f"AI 分析時發生錯誤: {str(e)}"
 
 
 def analyze_uploaded_video(video_file):
@@ -535,35 +712,52 @@ def show():
 
         # 如果點擊開始錄製
         if start_btn:
+            # 強制重置所有狀態，確保每次開始都是全新的錄製
             st.session_state.stop_recording = False
             st.session_state.recording_complete = False
             st.session_state.analysis_data = None
             st.session_state.analyzing = False
             st.session_state.video_saved = False
-            
+
+            # 刪除舊的影片文件，確保不會讀取到之前的錄製
             output_video = "webcam_recording.mp4"
+            if os.path.exists(output_video):
+                try:
+                    os.remove(output_video)
+                    st.info("🗑️ 已清除舊的錄製文件")
+                except Exception as e:
+                    st.warning(f"無法刪除舊文件: {e}")
+
+            # 開始新的錄製
             success, duration = record_from_webcam(output_video)
-            
+
             if success:
                 st.session_state.video_saved = True
                 st.session_state.recording_complete = True
                 status_container.success(f"✅ 錄製完成！時長：{duration:.1f} 秒")
+            else:
+                status_container.error("❌ 錄製失敗，請檢查攝像頭權限")
 
         # 如果點擊停止錄製
         if stop_btn:
             st.session_state.stop_recording = True
-            status_container.info("🔄 正在停止錄製並開始分析...")
+            status_container.info("🔄 正在停止錄製...")
+            # 不立即開始分析，讓用戶決定是否重新錄製
+            time.sleep(0.5)  # 給一點時間讓錄製完全停止
             st.rerun()
 
-        # 如果錄製已完成且影片已保存，開始分析
+        # 如果錄製已完成且影片已保存，顯示分析選項
         if st.session_state.recording_complete and st.session_state.video_saved and not st.session_state.analysis_data:
-            if not st.session_state.analyzing:
+            status_container.success("✅ 錄製完成！準備好分析嗎？")
+
+            # 添加分析按鈕
+            if st.button("🔍 分析此錄製", key="analyze_recording", type="primary", width='stretch'):
                 st.session_state.analyzing = True
                 status_container.info("🔄 正在分析錄制的影片，請稍候...")
-                
+
                 output_video = "webcam_recording.mp4"
                 data_rows, fps, width, height = analyze_video_pose(output_video)
-                
+
                 if len(data_rows) > 0:
                     st.session_state.analysis_data = data_rows
                     st.session_state.analyzing = False
@@ -571,6 +765,10 @@ def show():
                 else:
                     st.session_state.analyzing = False
                     status_container.error("❌ 未偵測到任何姿勢數據")
+
+        # 如果正在分析中
+        elif st.session_state.analyzing:
+            status_container.info("🔄 正在分析錄制的影片，請稍候...")
 
         # 如果分析完成並有數據，顯示結果
         if st.session_state.analysis_data:
@@ -581,6 +779,15 @@ def show():
             
             # 添加重新開始按鈕
             if st.button("🔄 重新錄製", key="restart_recording", width='stretch'):
+                # 清除舊的影片文件
+                output_video = "webcam_recording.mp4"
+                if os.path.exists(output_video):
+                    try:
+                        os.remove(output_video)
+                    except Exception as e:
+                        st.warning(f"無法刪除舊文件: {e}")
+
+                # 重置所有狀態
                 st.session_state.stop_recording = False
                 st.session_state.recording_complete = False
                 st.session_state.analysis_data = None

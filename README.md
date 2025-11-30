@@ -1,6 +1,8 @@
 # AI Health Dashboard
 
+Motive AI
 一個使用 Streamlit 構建的個人健康儀表板應用程序，提供姿勢檢測、身體成分分析和健康建議功能。
+組員：邱奕翔、呂韋勳、林柏宇
 
 ## 功能特色
 

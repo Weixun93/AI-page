@@ -45,14 +45,30 @@
         "bodyFatPercentage": 37.5,
         "skeletalMuscleMassKg": 19.3,
         "bmi": 24.0
+      },
+      {
+        "date": "2025-11-26",
+        "heightCm": 156.9,
+        "weightKg": 59.1,
+        "bodyFatPercentage": 37.5,
+        "skeletalMuscleMassKg": 19.3,
+        "bmi": 24.0
+      },
+      {
+        "date": "2025-11-26",
+        "heightCm": 156.9,
+        "weightKg": 59.1,
+        "bodyFatPercentage": 37.5,
+        "skeletalMuscleMassKg": 19.3,
+        "bmi": 24.0
       }
     ]
   },
   "sleep": {
     "lastNight": {
       "date": "2025-11-26",
-      "totalHours": 7.5,
-      "deepHours": 1.5,
+      "totalHours": 9.0,
+      "deepHours": 2.0000000000000004,
       "remHours": 1.8,
       "lightHours": 4.2,
       "sleepScore": 82
@@ -130,16 +146,24 @@
       },
       {
         "date": "2025-11-26",
-        "restingHeartRateBpm": 64,
-        "heartRateVariabilityMs": 72
+        "restingHeartRateBpm": 60,
+        "heartRateVariabilityMs": 76
       }
     ]
   },
   "activity": {
-    "todayCaloriesBurnt": 850,
+    "todayCaloriesBurnt": 1090,
     "todayCaloriesGoal": 800,
     "weeklyTotalDistanceKm": 15.8,
     "recentActivities": [
+      {
+        "type": "重量訓練",
+        "date": "2025-11-26",
+        "durationMinutes": 60,
+        "caloriesBurnt": 230,
+        "distanceKm": null,
+        "notes": null
+      },
       {
         "type": "游泳",
         "date": "2025-11-27",

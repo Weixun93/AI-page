@@ -7,12 +7,18 @@ import json
 import time
 from datetime import datetime, timedelta
 import base64
+from dotenv import load_dotenv
+# 載入環境變數
+load_dotenv()
 
+# 從環境變數獲取 Gemini API Key
+GEMINI_API_KEY_1 = os.getenv('GEMINI_API_KEY_1')
+if not GEMINI_API_KEY_1:
+    st.error("❌ 找不到 GEMINI_API_KEY_1 環境變數。請檢查 .env 文件是否存在且包含正確的 API 金鑰。")
+    st.stop()
 
-# 設置 Gemini API
-GEMINI_API_KEY = "AIzaSyBbtvL5AXg6sMd2UON-Pv4heCGD4PfCOAQ"
-genai.configure(api_key=GEMINI_API_KEY)
-
+# 配置Gemini API
+genai.configure(api_key=GEMINI_API_KEY_1)
 
 def extract_inbody_data_from_image(uploaded_file):
     """使用 Gemini Vision 從上傳的圖片中提取 InBody 數據"""

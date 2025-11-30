@@ -9,20 +9,24 @@ import csv
 import matplotlib.pyplot as plt
 import pandas as pd
 import time
-import subprocess
-import platform
 import logging
 import google.generativeai as genai
-
+from dotenv import load_dotenv
+# 載入環境變數
+load_dotenv()
 # 抑制 TensorFlow 和 MediaPipe 的日誌
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.ERROR)
 logging.getLogger('mediapipe').setLevel(logging.ERROR)
 
-# Gemini API 配置
-GEMINI_API_KEY = "AIzaSyCn39H-Un3qYg5QRGWjxMjXqF1uNa1t7Dc"
-genai.configure(api_key=GEMINI_API_KEY)
+# 從環境變數獲取 Gemini API Key
+GEMINI_API_KEY_2 = os.getenv('GEMINI_API_KEY_2')
+if not GEMINI_API_KEY_2:
+    st.error("❌ 找不到 GEMINI_API_KEY_2 環境變數。請檢查 .env 文件是否存在且包含正確的 API 金鑰。")
+    st.stop()
 
+# 配置Gemini API
+genai.configure(api_key=GEMINI_API_KEY_2)
 
 def calculate_angle(a, b, c):
     """

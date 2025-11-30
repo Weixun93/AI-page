@@ -8,3 +8,4 @@ opencv-python
 mediapipe
 google-generativeai
 Pillow
+python-dotenv

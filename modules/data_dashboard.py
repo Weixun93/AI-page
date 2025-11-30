@@ -15,14 +15,19 @@ import io
 import base64
 import numpy as np
 import google.generativeai as genai
+from dotenv import load_dotenv
 
-# Gemini API Key - 請貼上您的API Key
-# GEMINI_API_KEY = "AIzaSyA0IbkD-x07Fi7wrtT1ZDMdL3WvieHVJuA"  # 替換為您的實際API Key
-GEMINI_API_KEY = "AIzaSyCn39H-Un3qYg5QRGWjxMjXqF1uNa1t7Dc"
+# 載入環境變數
+load_dotenv()
+
+# 從環境變數獲取 Gemini API Key
+GEMINI_API_KEY_2 = os.getenv('GEMINI_API_KEY_2')
+if not GEMINI_API_KEY_2:
+    st.error("❌ 找不到 GEMINI_API_KEY_2 環境變數。請檢查 .env 文件是否存在且包含正確的 API 金鑰。")
+    st.stop()
 
 # 配置Gemini API
-genai.configure(api_key=GEMINI_API_KEY)
-
+genai.configure(api_key=GEMINI_API_KEY_2)
 
 def analyze_inbody_file(file_bytes, file_type):
     """使用Gemini API分析InBody文件並提取關鍵數值"""
